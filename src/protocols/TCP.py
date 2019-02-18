@@ -1,6 +1,22 @@
 import struct
 from ctypes import *
 
+# from scapy
+
+TCPOptions = {
+	0: ("EOL", None),
+	1: ("NOP", None),
+	2: ("MSS", "!H"),
+	3: ("WScale", "!B"),
+	4: ("SAckOK", None),
+	5: ("SAck", "!"),
+	8: ("Timestamp", "!II"),
+	14: ("AltChkSum", "!BH"),
+	15: ("AltChkSumOpt", None),
+	25: ("Mood", "!p"),
+	28: ("UTO", "!H"),
+	34: ("TFO", "!II"),
+}
 
 
 class TCP(BigEndianStructure):
@@ -27,7 +43,9 @@ class TCP(BigEndianStructure):
 		return self.from_buffer_copy(buffer)
 
 	def __init__(self, buffer):
-		self.show()
+		self.options = []
+		self.subpacket= None
+
 
 	def __repr__(self):
 		return "<TCP src_port:{}, dst_port:{}>".format(self.src_port, self.dst_port)
@@ -56,7 +74,34 @@ class TCP(BigEndianStructure):
 	\t\tAcknowledgment Number: {}  \n\t\t\tData Offset: {}  \n\t\t\tURG: {} 
 	\t\tACK: {}  \n\t\t\tPSH: {}  \n\t\t\tRST: {}  \n\t\t\tSYN: {}
 	\t\tFIN: {}  \n\t\t\tWindow: {}  \n\t\t\tChecksum: {}
-	\t\tUrgent Pointer: {} """.format(
+	\t\tUrgent Pointer: {} \n\t\t\tOptions: {}""".format(
 			self.src_port, self.dst_port, self.seq_num, self.ack_num, 
 			self.offset, self.urg, self.ack, self.psh, self.rst, 
-			self.syn, self.fin, self.window, self.checksum, self.urgent))
+			self.syn, self.fin, self.window, self.checksum, self.urgent, self.options))
+
+	def decode_options(self, buffer):
+		while len(buffer):
+			option_type= struct.unpack("!B", buffer[:1])[0]
+			buffer = buffer[1:]
+			
+			name, fmt = TCPOptions[option_type]
+			
+			if name == "SAckOK":
+				length = struct.unpack("!B", buffer[:1])[0]
+				buffer = buffer[1:]
+				self.options.append((name,))
+
+			if fmt:
+				length = struct.unpack("!B", buffer[:1])[0]
+				buffer = buffer[1:]
+
+				if name == "SAck":
+					fmt = "{}{}I".format(fmt, int((length - 2)/4))
+
+				values = struct.unpack(fmt, buffer[:length - 2])
+				buffer=buffer[struct.calcsize(fmt):]
+
+				self.options.append((name, values))
+
+			else:
+				self.options.append((name,))
