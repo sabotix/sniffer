@@ -55,13 +55,22 @@ try:
 		#raw_buffer=raw_buffer[0]
 
 		ip_header = IP(raw_buffer[0:20])
+		#if ip_header.ihl>5:
+		#	ip_header.decode_options(raw_buffer[20: 4*ip_header.ihl])
+		
 		offset = ip_header.ihl*4
+		
 		if ip_header.get_prortocol() == "TCP":
-			tcp_header = TCP(raw_buffer[offset: offset+20])
+			tcp_header = TCP(raw_buffer[offset: offset+ 20])
+
+			if tcp_header.offset > 5:
+				tcp_header.decode_options(raw_buffer[offset + 20: offset + 4*tcp_header.offset])
+			tcp_header.show()
+			
 			if tcp_header.src_port == 80 or tcp_header.dst_port == 80:
-				print_data(raw_buffer[offset+20:], http=True)
+				print_data(raw_buffer[offset+tcp_header.offset*4:], http=True)
 			else: 
-				print_data(raw_buffer[offset+20:])
+				print_data(raw_buffer[offset+tcp_header.offset*4:])
 
 		if ip_header.get_prortocol() == "UDP":
 			udp_header = UDP(raw_buffer[offset: offset+8])
@@ -81,3 +90,15 @@ except KeyboardInterrupt:
 		sniffer.ioctl(socket.SIO_RCVALL, socket.RCVALL_OFF)
 	sniffer.close()
 
+
+
+class Sniffer():
+	def __init__(self, buffer, **kwargs):
+	    self.buffer = buffer
+
+	def snif(self):
+		pass
+
+	@staticmethod
+	def parser(self):
+		pass
