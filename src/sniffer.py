@@ -89,16 +89,3 @@ except KeyboardInterrupt:
 	if os.name == "nt":
 		sniffer.ioctl(socket.SIO_RCVALL, socket.RCVALL_OFF)
 	sniffer.close()
-
-
-
-class Sniffer():
-	def __init__(self, buffer, **kwargs):
-	    self.buffer = buffer
-
-	def snif(self):
-		pass
-
-	@staticmethod
-	def parser(self):
-		pass
